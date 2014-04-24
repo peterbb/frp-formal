@@ -1,0 +1,312 @@
+%% Author: Peter Brottveit Bock
+
+%% -----------------------------------------------------------------
+%% Syntactic sugar.
+%% -----------------------------------------------------------------
+
+tm/let : tm -> (tm -> tm) -> tm = [E] [E']
+    tm/app (tm/lam E') E.
+
+%solve of-now/let : {E} {E'} {A} {B} {Gamma} 
+    of-now Gamma (tm/let E E') A
+    <- of-now Gamma E B
+    <- ({x} of-now (ctx/now Gamma x B) (E' x) A).
+
+
+%abbrev tm/prod-let : tm -> (tm -> tm -> tm) -> tm = [E] [E']
+    tm/let E [p] 
+    tm/let (tm/fst p) [f]
+    tm/let (tm/snd p) [s]
+    E' f s.
+
+%{
+%solve of-now/prod-let : {E} {E'} {A} {B} {C} {Gamma}
+    of-now Gamma (tm/prod-let E E') C
+    <- of-now Gamma E (tp/prod A B)
+    <- ({x}{y} of-now (ctx/now (ctx/now Gamma y B) x A) (E' x y) C).
+}%
+
+tm/cons-delta-let : tm -> (tm -> tm -> tm) -> tm = [e] [body] 
+    tm/cons-let e [x] [xs] 
+    tm/delta-let xs [xs']
+        body x xs'.
+
+%abbrev tm/prod-delta-let : tm -> (tm -> tm -> tm) -> tm = [e] [body]
+    tm/prod-let e [p1] [p2]
+    tm/delta-let p2 [p2']
+    body p1 p2'.
+
+tm/lam2 : (tm -> tm -> tm) -> tm = [B] 
+    tm/lam [x] tm/lam [y] B x y.
+
+tm/lam3 : (tm -> tm -> tm -> tm) -> tm = [B]
+    tm/lam [x] tm/lam2 (B x).
+
+tm/app2 : tm -> tm -> tm -> tm = [f] [e] [e']
+    tm/app (tm/app f e) e'.
+
+tm/app3 : tm -> tm -> tm -> tm -> tm = 
+    [f][e1][e2][e3] tm/app (tm/app2 f e1 e2) e3.
+
+tm/app4 : tm -> tm -> tm -> tm -> tm -> tm =
+    [f][e1][e2][e3][e4] tm/app (tm/app3 f e1 e2 e3) e4.
+
+
+%% -----------------------------------------------------------------
+%% Helper functions.
+%% -----------------------------------------------------------------
+
+
+ex/add : tm =
+    tm/lam [n] tm/lam [m] 
+        tm/nat-rec n m ([acc] tm/succ acc).
+
+ex/add-type : tp = tp/nat => tp/nat => tp/nat.
+
+%solve add-deriv : of-now ctx/empty ex/add ex/add-type.
+
+ex/two : tm = tm/succ (tm/succ tm/zero).
+ex/four : tm = tm/succ (tm/succ ex/two).
+%solve ex/val-two : val ex/two.
+%solve ex/val-four : val ex/four.
+
+
+%query 1 * (val tm/zero).
+%query 1 * (val (tm/succ tm/zero)).
+%query 0 * (val (tm/nat-rec X Y Z)).
+%query 0 * (val (tm/app N M)).
+
+%% -----------------------------------------------------------------
+%% Constant zero stream.
+%% -----------------------------------------------------------------
+
+ex/zeros-type : tp = tp/S tp/alloc => tp/S tp/nat.
+ex/zeros : tm =
+    tm/fix [zeros] tm/lam [us]
+    tm/cons-delta-let us [u] [us']
+    tm/cons tm/zero (tm/delta u (tm/app zeros us')).
+
+%%solve ex/zeros-deriv : of-now ctx/empty ex/zeros ex/zeros-type.
+%query * 1 of-now ctx/empty ex/zeros ex/zeros-type.
+    
+
+%% -----------------------------------------------------------------
+%% Example 3.1 "Basic Examples"
+%% -----------------------------------------------------------------
+
+ex/const-type : tp = ((tp/S tp/alloc) => tp/bool => (tp/S tp/bool)).
+ex/const : tm =
+    tm/lam [us] tm/lam [b]
+    tm/stable-let (tm/promote b) [b']
+    tm/app
+        (tm/fix [const] tm/lam [us]
+         tm/cons-delta-let us [u] [us']
+             tm/cons b' (tm/delta u (tm/app const us')))
+        us.
+
+%%solve ex/const-deriv : (of-now ctx/empty ex/const ex/const-type).
+%query * 1 (of-now ctx/empty ex/const ex/const-type).
+
+%% -----------------------------------------------------------------
+
+ex/sum_acc : tm =
+    tm/fix [sum_acc]
+    tm/lam [us] tm/lam [ns] tm/lam [acc]
+    tm/cons-delta-let us [u] [us']
+    tm/cons-delta-let ns [n] [ns']
+    tm/stable-let (tm/promote (tm/app2 ex/add n acc)) [x]
+        tm/cons x (tm/delta u (tm/app3 sum_acc us' ns' x)).
+
+ex/sum_acc-type : tp =
+    tp/S tp/alloc => tp/S tp/nat => tp/nat => tp/S tp/nat.
+
+%solve ex/sum_acc-deriv : (of-now ctx/empty ex/sum_acc ex/sum_acc-type).
+%%query * 1 (of-now ctx/empty ex/sum_acc ex/sum_acc-type).
+
+ex/sum : tm -> tm = [sum_acc]
+    tm/lam [us] tm/lam [ns] 
+        tm/app3 sum_acc us ns tm/zero.
+
+ex/sum-type : tp =
+    tp/S tp/alloc => tp/S tp/nat => tp/S tp/nat.
+
+%solve ex/sum-deriv :
+    ({sum_acc} of-now (ctx/now ctx/empty sum_acc ex/sum_acc-type)
+                      (ex/sum sum_acc) ex/sum-type).
+                
+
+%% -----------------------------------------------------------------
+%% Higher-Order Stream Operations
+%% -----------------------------------------------------------------
+            
+ex/tails-type : tp -> tp = [A] tp/S tp/alloc => tp/S A => tp/S (tp/S A).
+ex/tails : tm =
+    tm/fix [tails]
+    tm/lam [us] tm/lam [xs] 
+    tm/cons-delta-let us [u] [us']
+    tm/cons-delta-let xs [x] [xs']
+    tm/cons xs (tm/delta u (tm/app2 tails us' xs')).
+
+%solve ex/tails-deriv : {A} (of-now ctx/empty ex/tails (ex/tails-type A)).
+
+%% -----------------------------------------------------------------
+
+ex/map-type : tp -> tp -> tp = [A] [B]
+    tp/S tp/alloc => tp/stable (A => B) => tp/S A => tp/S B.
+
+ex/map : tm =
+    tm/lam [us] tm/lam [f]
+    tm/stable-let f [f]
+    tm/app
+        (tm/fix [map] tm/lam [us] tm/lam [xs]
+            tm/cons-delta-let us [u] [us']
+            tm/cons-delta-let xs [x] [xs']
+            tm/cons (tm/app f x)
+                    (tm/delta u (tm/app2 map us' xs'))
+        )
+        us.
+    
+%solve ex/map-deriv : {A}{B} of-now ctx/empty ex/map (ex/map-type A B).
+
+%% -----------------------------------------------------------------
+
+ex/unfold-type : tp -> tp -> tp = [X] [A]
+    tp/S tp/alloc => tp/stable (X => (tp/prod A (tp/next X))) => X => tp/S A.
+
+ex/unfold : tm =
+    tm/fix [unfold] tm/lam [us] tm/lam [f] tm/lam [x]
+    tm/cons-delta-let us [u] [us']
+    tm/stable-let f [f]
+    tm/app (tm/lam [fx]
+                tm/delta-let (tm/snd fx) [x']
+                tm/cons (tm/fst fx)
+                        (tm/delta u 
+                         (tm/app3 unfold us' (tm/stable f) x'))
+                )
+           (tm/app f x).
+
+%solve ex/unfold-deriv : {X} {A}
+    of-now ctx/empty ex/unfold (ex/unfold-type X A).
+
+%% -----------------------------------------------------------------
+%% Dynamic Changes of Streams.
+%% -----------------------------------------------------------------
+
+ex/swap-type : tp -> tp =
+    [A] tp/S tp/alloc => tp/nat => tp/S A => tp/S A => tp/S A.
+
+ex/swap : tm -> tm -> tm = [beq_nat] [minus]
+    tm/fix [swap] tm/lam [us] tm/lam [n] tm/lam [xs] tm/lam [ys]
+    tm/if (tm/app2 beq_nat n tm/zero)
+    %%then
+        ys
+    %%else
+        (tm/cons-delta-let us [u] [us']
+         tm/cons-delta-let xs [x] [xs']
+         tm/cons-delta-let ys [y] [ys']
+         tm/stable-let (tm/promote n) [m]
+         tm/cons x (tm/delta u
+                    (tm/app4 swap us' (tm/app2 minus m (tm/succ tm/zero))
+                                  xs' ys'))).
+
+%solve ex/swap-deriv : {A}{beq_nat}{minus}
+    of-now (ctx/stable (ctx/stable ctx/empty
+                beq_nat (tp/nat => tp/nat => tp/bool))
+                minus   (tp/nat => tp/nat => tp/nat))
+           (ex/swap beq_nat minus)
+           (ex/swap-type A).
+    
+%% -----------------------------------------------------------------
+%% 3.2 Type Encodings, Events
+%% -----------------------------------------------------------------
+
+tp/E : tp -> tp = [A] tp/mu [a] tp/sum A a.
+
+ex/switch-type : tp -> tp = [A]
+    tp/S tp/alloc => tp/S A => tp/E (tp/S A) => tp/S A.
+
+ex/switch : tm =
+    tm/fix [switch] tm/lam [us] tm/lam [xs] tm/lam [e]
+    tm/cons-delta-let us [u] [us']
+    tm/cons-delta-let xs [x] [xs']
+    tm/case (tm/out e)
+        ([ys] ys)
+        ([t] tm/delta-let t [e']
+             tm/cons x (tm/delta u 
+                         (tm/app3 switch us' xs' e'))).
+
+%solve ex/switch-deriv : {A}
+    of-now ctx/empty ex/switch (ex/switch-type A).
+
+%% -----------------------------------------------------------------
+ex/return-type : tp -> tp = [A] A => tp/E A.
+ex/return : tm = tm/lam [x] tm/into (tm/inl x).
+%solve ex/return-deriv : {A} of-now ctx/empty ex/return (ex/return-type A).
+
+%% -----------------------------------------------------------------
+
+ex/bind-type : tp -> tp -> tp = [A] [B]
+    tp/S tp/alloc => tp/stable (A => tp/E B) => tp/E A => tp/E B.
+
+ex/bind : tm =
+    tm/fix [bind] tm/lam [us] tm/lam [h] tm/lam [e]
+    tm/cons-delta-let us [u] [us']
+    tm/stable-let h [f]
+    tm/case (tm/out e)
+        ([a] tm/app f a)
+        ([t] tm/delta-let t [e']
+             tm/into (tm/inr (tm/delta u
+                (tm/app3 bind us' (tm/stable f) e')))).
+
+%solve ex/bind-deriv : {A}{B}
+    of-now ctx/empty ex/bind (ex/bind-type A B).
+
+%% -----------------------------------------------------------------
+%% Resumption
+%% -----------------------------------------------------------------
+
+tp/R : tp -> tp -> tp -> tp = [I] [O] [A]
+    tp/mu [a] tp/prod a (tp/sum A (I => tp/prod O a)).
+
+ex/par-type : tp -> tp -> tp -> tp = [I] [O] [A]
+    tp/S tp/alloc => (tp/prod (tp/R I O A) (tp/R I O A)) => tp/R I O A.
+
+ex/par : tm =
+    tm/fix [par] tm/lam [us] tm/lam [p]
+    %% par : par-type later
+    %% us : S alloc now
+    %% p : (R I O A) x (R I O A) now
+    tm/prod-let p [p1] [p2]
+    %% p1 : R I O A now
+    %% p2 : R I O A now
+    tm/cons-delta-let us [u] [us']
+    %% u : alloc now
+    %% us' : S alloc later
+    tm/case (tm/snd (tm/out p1)) %% < : %% (A + I => O x *(R I O A))
+      ([a] %% a : A now
+        p1)
+      ([f] %% f : I => O x *(R I O A) now
+           tm/delta-let (tm/fst (tm/out p1)) [p1']
+           %% (tm/out p1) : *(R I O A) + (A + I => O x *(R I O A)
+           %% p1' : (R I O A) later
+           tm/delta-let (tm/fst (tm/out p2)) [p2']
+           %% p2' : (R I O A) later
+           tm/let (tm/delta u (tm/app2 par us' 
+                                       (tm/pair p1' p2'))) [p']
+           %% p' : * (R I O A) now
+           tm/let (tm/lam [i] %% i : I now
+                    tm/prod-delta-let (tm/app f i) [o] [p1'']
+                    %% o : O now
+                    %% p1'' : R I O A later
+                    tm/into (tm/pair o 
+                        (tm/delta u (tm/app2 par us' (tm/pair p2' p1'')))))
+                [f']
+           %% f' : I => (R I O A) now
+            tm/into (tm/pair p' (tm/inr f'))).
+
+%solve ex/pair-deriv : {I}{O}{A}
+    of-now ctx/empty ex/par (ex/par-type I O A).
+
+                            
+             
+

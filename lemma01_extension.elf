@@ -1,0 +1,151 @@
+
+combine-conc : store-conc Sigma1 Sigma  Sigma2
+            -> store-conc Sigma2 Sigma' Sigma3
+            -> store-conc Sigma1 Sigma'' Sigma3 
+            -> type.
+%mode combine-conc +Conc1 +Conc2 -Conc3.
+
+combine-conc/empty : 
+    combine-conc Conc1 store-conc/empty Conc1.
+
+combine-conc/now : 
+    combine-conc Conc1 (store-conc/now Conc2) (store-conc/now Conc3)
+    <- combine-conc Conc1 Conc2 Conc3.
+
+combine-conc/later :
+    combine-conc Conc1 (store-conc/later Conc2) (store-conc/later Conc3)
+    <- combine-conc Conc1 Conc2 Conc3.
+
+combine-conc/null : 
+    combine-conc Conc1 (store-conc/null Conc2) (store-conc/null Conc3)
+    <- combine-conc Conc1 Conc2 Conc3.
+
+%worlds () (combine-conc _ _ _).
+%total (Conc) (combine-conc _ Conc _).
+
+combine-conc3 : store-conc Sigma1 Sigma    Sigma2
+             -> store-conc Sigma2 Sigma'   Sigma3
+             -> store-conc Sigma3 Sigam''  Sigma4
+             -> store-conc Sigma1 Sigma''' Sigma4
+             -> type.
+%mode combine-conc3 +Conc1 +Conc2 +Conc3 -Conc4.
+
+- : combine-conc3 Conc1 Conc2 Conc3 Conc4
+    <- combine-conc Conc1 Conc2 Conc
+    <- combine-conc Conc Conc3 Conc4.
+
+%worlds () (combine-conc3 _ _ _ _).
+%total {} (combine-conc3 _ _ _ _).
+
+extension : 
+    eval Sigma E Sigma' V -> 
+    store-conc Sigma Sigma'' Sigma' -> type.
+%mode extension +Eval -Conc.
+
+- : extension (eval/refl _) store-conc/empty.
+
+- : extension (eval/if-true EvalCons EvalPred) 
+              (StoreConc'' : store-conc Sigma1 _ Sigma3)
+    <- extension (EvalPred : eval Sigma1 _ Sigma2 _)
+                 (StoreConc : store-conc Sigma1 Sigma Sigma2)
+    <- extension (EvalCons : eval Sigma2 _ Sigma3 _)
+                 (StoreConc' : store-conc Sigma2 Sigma' Sigma3)
+    <- combine-conc StoreConc StoreConc' StoreConc''.
+
+- : extension (eval/if-false EvalCons EvalPred) 
+              (StoreConc'' : store-conc Sigma1 _ Sigma3)
+    <- extension (EvalPred : eval Sigma1 _ Sigma2 _)
+                 (StoreConc : store-conc Sigma1 Sigma Sigma2)
+    <- extension (EvalCons : eval Sigma2 _ Sigma3 _)
+                 (StoreConc' : store-conc Sigma2 Sigma' Sigma3)
+    <- combine-conc StoreConc StoreConc' StoreConc''.
+
+- : extension (eval/succ Eval) Conc
+    <- extension Eval Conc.
+
+- : extension (eval/nat-rec-zero EvalBase EvalNum) Conc3
+    <- extension EvalNum Conc1
+    <- extension EvalBase Conc2
+    <- combine-conc Conc1 Conc2 Conc3.
+
+- : extension (eval/nat-rec-succ EvalStep EvalNum) Conc3
+    <- extension EvalNum Conc1
+    <- extension EvalStep Conc2
+    <- combine-conc Conc1 Conc2 Conc3.
+
+- : extension (eval/pair EvalSnd EvalFst) Conc3
+    <- extension EvalFst Conc1
+    <- extension EvalSnd Conc2
+    <- combine-conc Conc1 Conc2 Conc3.
+
+- : extension (eval/fst EvalPair) Conc
+    <- extension EvalPair Conc.
+
+- : extension (eval/snd EvalPair) Conc
+    <- extension EvalPair Conc.
+
+- : extension (eval/inl EvalLeft) Conc
+    <- extension EvalLeft Conc.
+
+- : extension (eval/inr EvalRight) Conc
+    <- extension EvalRight Conc.
+
+- : extension (eval/case-inl EvalBranch EvalSum) Conc3
+    <- extension EvalSum Conc1
+    <- extension EvalBranch Conc2
+    <- combine-conc Conc1 Conc2 Conc3.
+
+- : extension (eval/case-inr EvalBranch EvalSum) Conc3
+    <- extension EvalSum Conc1
+    <- extension EvalBranch Conc2
+    <- combine-conc Conc1 Conc2 Conc3.
+
+- : extension (eval/app EvalSubst EvalArg EvalFun) Conc4
+    <- extension EvalFun Conc1
+    <- extension EvalArg Conc2
+    <- extension EvalSubst Conc3
+    <- combine-conc3 Conc1 Conc2 Conc3 Conc4.
+
+- : extension (eval/delta Fresh Eval) (store-conc/later Conc)
+    <- extension Eval Conc.
+
+- : extension (eval/delta-let EvalBody EvalRef) Conc3
+    <- extension EvalRef Conc1
+    <- extension EvalBody Conc2
+    <- combine-conc Conc1 Conc2 Conc3.
+
+- : extension (eval/ptr-ref _) store-conc/empty.
+
+- : extension (eval/into Eval) Conc
+    <- extension Eval Conc.
+
+- : extension (eval/out Eval) Conc
+    <- extension Eval Conc.
+
+- : extension (eval/stable Eval) Conc
+    <- extension Eval Conc.
+
+- : extension (eval/promote Eval) Conc
+    <- extension Eval Conc.
+
+- : extension (eval/stable-let EvalBody Eval) Conc3
+    <- extension Eval Conc1
+    <- extension EvalBody Conc2
+    <- combine-conc Conc1 Conc2 Conc3.
+
+- : extension (eval/cons EvalSnd EvalFst) Conc3
+    <- extension EvalFst Conc1
+    <- extension EvalSnd Conc2
+    <- combine-conc Conc1 Conc2 Conc3.
+
+- : extension (eval/cons-let EvalBody Eval) Conc3
+    <- extension Eval Conc1
+    <- extension EvalBody Conc2
+    <- combine-conc Conc1 Conc2 Conc3. 
+
+- : extension (eval/fix Eval) Conc
+    <- extension Eval Conc.
+
+%worlds () (extension _ _).
+%total Eval (extension Eval _).
+
