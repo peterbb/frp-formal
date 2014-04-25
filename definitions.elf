@@ -16,7 +16,7 @@ neq-nat/s-s : neq-nat (nat/s N) (nat/s M)
 %worlds () (neq-nat _ _).
 
 % --------------------------------------------------
-tp : type.
+tp : type.  %name tp A.
 
 tp/bool   : tp.
 tp/nat    : tp.
@@ -30,7 +30,7 @@ tp/S      : tp -> tp.
 tp/alloc  : tp.
 
 % --------------------------------------------------
-tm : type.
+tm : type. %name tm E.
 
 tm/zero        : tm.
 tm/succ        : tm -> tm.
@@ -334,7 +334,7 @@ of-later/intro : of-later Gamma E A
     <- of-now Gamma* E A.
 
 % --------------------------------------------------
-eval : store -> tm -> store -> val V -> type.
+eval : store -> tm -> store -> val V -> type. %name eval Eval.
 
 eval/refl : {V : val E} eval Sigma E Sigma V.
 
@@ -349,12 +349,12 @@ eval/if-false : eval Sigma (tm/if E _ E') Sigma'' V
 eval/succ : eval Sigma (tm/succ E) Sigma' (val/succ V)
     <- eval Sigma E Sigma' V.
 
-eval/nat-rec-zero : eval Sigma (tm/nat-rec E Ez _) Sigma'' V
+eval/nat-rec-zero : eval Sigma (tm/nat-rec E Ez Es) Sigma'' V
     <- eval Sigma E Sigma' val/zero
     <- eval Sigma' Ez Sigma'' V.
 
-eval/nat-rec-succ : eval Sigma (tm/nat-rec E _ Es) Sigma'' V'
-    <- eval Sigma E Sigma' (val/succ _ : val (tm/succ V))
+eval/nat-rec-succ : eval Sigma (tm/nat-rec E Ez Es) Sigma'' V'
+    <- eval Sigma E Sigma' (val/succ Val : val (tm/succ V))
     <- eval Sigma' (Es V) Sigma'' V'.
 
 eval/pair : eval Sigma (tm/pair E1 E2) Sigma'' (val/pair V1 V2)
