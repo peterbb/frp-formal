@@ -1,190 +1,141 @@
-
-%% --------------------------------------------------------------
-%% Need Output Factoring for the extension-thingy.
-
-fix-empty-store-out : eval store/empty E Sigma V ->
-                      eval Sigma E' store/empty V' ->
-                      store-conc Sigma Sigma' store/empty ->
-                      eval store/empty E  store/empty V ->
-                      eval store/empty E' store/empty V' ->
-                      type.
-%mode fix-empty-store-out +Eval1 +Eval2 +Conc -Eval3 -Eval4.
-
-- : fix-empty-store-out Eval1 Eval2 store-conc/empty Eval1 Eval2.
-
-%worlds () (fix-empty-store-out _ _ _ _ _).
-%total Conc (fix-empty-store-out _ _ Conc _ _).
-
-%% --------------------------------------------------------------
-fix-empty-store : eval store/empty E Sigma V ->
-                  eval Sigma E' store/empty V' ->
-                  eval store/empty E store/empty V ->
-                  eval store/empty E' store/empty V' ->
-                  type.
-%mode fix-empty-store +Eval1 +Eval2 -Eval3 -Eval4.
-
-- : fix-empty-store Eval1 Eval2 Eval3 Eval4
-    <- extension Eval2 Conc
-    <- fix-empty-store-out Eval1 Eval2 Conc Eval3 Eval4.
-
-%worlds () (fix-empty-store _ _ _ _).
-%total {} (fix-empty-store _ _ _ _).
-
 %% ----------------------------------------------------------------
-fix-empty-store3-out : eval store/empty E1 Sigma1 V1
-                    -> eval Sigma1 E2 Sigma2 V2
-                    -> eval Sigma2 E3 store/empty V3
-                    -> store-conc Sigma2 Sigma store/empty
-                    -> eval store/empty E1 store/empty V1
-                    -> eval store/empty E2 store/empty V2
-                    -> eval store/empty E3 store/empty V3
-                    -> type.
-%mode fix-empty-store3-out +Eval1 +Eval2 +Eval3 +Conc
-                           -Eval1' -Eval2' -Eval3'.
+uniformity' : {Eval : eval store/empty E store/empty V}
+             extension Eval Conc ->
+             {Sigma} eval Sigma E Sigma V -> type.
+%mode uniformity' +Eval1 +Extension +Sigma -Eval2.
+    
+- : uniformity' (eval/refl _) _ _ (eval/refl _).
 
-- : fix-empty-store3-out (Eval1 : eval store/empty E1 Sigma1 V1)
-                         (Eval2 : eval Sigma1 E2 store/empty V2)
-                         (Eval3 : eval store/empty E3 store/empty V3)
-                         (store-conc/empty : 
-                            store-conc store/empty store/empty store/empty)
-                         Eval1' Eval2' Eval3
-    <- fix-empty-store Eval1 Eval2 Eval1' Eval2'.
+- : uniformity' (eval/if-true EvalBranch EvalBool) 
+               (extension/if-true _ ExtBranch ExtBool)
+               Sigma
+               (eval/if-true EvalBranch' EvalBool')
+    <- uniformity' EvalBool ExtBool Sigma EvalBool'
+    <- uniformity' EvalBranch ExtBranch Sigma EvalBranch'.
 
-%worlds () (fix-empty-store3-out _ _ _ _ _ _ _).
-%total Conc (fix-empty-store3-out _ _ _ Conc _ _ _).
+- : uniformity' (eval/if-false EvalBranch EvalBool) 
+               (extension/if-false _ ExtBranch ExtBool)
+               Sigma
+               (eval/if-false EvalBranch' EvalBool')
+    <- uniformity' EvalBool ExtBool Sigma EvalBool'
+    <- uniformity' EvalBranch ExtBranch Sigma EvalBranch'.
 
-%% ----------------------------------------------------------------
-fix-empty-store3 : eval store/empty E1 Sigma1 V1
-                -> eval Sigma1 E2 Sigma2 V2
-                -> eval Sigma2 E3 store/empty V3
-                -> eval store/empty E1 store/empty V1
-                -> eval store/empty E2 store/empty V2
-                -> eval store/empty E3 store/empty V3
-                -> type.
-%mode fix-empty-store3 +Eval1 +Eval2 +Eval3 -Eval1' -Eval2' -Eval3'.
+- : uniformity' (eval/succ Eval) (extension/succ Ext) Sigma
+               (eval/succ Eval')
+    <- uniformity' Eval Ext Sigma Eval'.
 
-- : fix-empty-store3 Eval1 Eval2 Eval3 Eval1' Eval2' Eval3'
-    <- extension Eval3 (Conc : store-conc Sigma2 Sigma store/empty)
-    <- fix-empty-store3-out Eval1 Eval2 Eval3 Conc Eval1' Eval2' Eval3'.
+- : uniformity' (eval/nat-rec-zero EvalBranch EvalNum)
+               (extension/nat-rec-zero _ ExtBranch ExtNum)
+               Sigma
+               (eval/nat-rec-zero EvalBranch' EvalNum')
+    <- uniformity' EvalNum ExtNum Sigma EvalNum'
+    <- uniformity' EvalBranch ExtBranch Sigma EvalBranch'.
 
-%worlds () (fix-empty-store3 _ _ _ _ _ _).
-%total {} (fix-empty-store3 _ _ _ _ _ _).
+- : uniformity' (eval/nat-rec-succ EvalBranch EvalNum)
+               (extension/nat-rec-succ _ ExtBranch ExtNum)
+               Sigma
+               (eval/nat-rec-succ EvalBranch' EvalNum')
+    <- uniformity' EvalNum ExtNum Sigma EvalNum'
+    <- uniformity' EvalBranch ExtBranch Sigma EvalBranch'.
 
-%% ----------------------------------------------------------------
-uniformity' : eval store/empty E store/empty V ->
+- : uniformity' (eval/pair EvalSnd EvalFst)
+               (extension/pair _ ExtSnd ExtFst)
+               Sigma
+               (eval/pair EvalSnd' EvalFst')
+    <- uniformity' EvalFst ExtFst Sigma EvalFst'
+    <- uniformity' EvalSnd ExtSnd Sigma EvalSnd'.
+
+
+- : uniformity' (eval/snd Eval) (extension/snd Ext) Sigma (eval/snd Eval')
+    <- uniformity' Eval Ext Sigma Eval'.
+
+- : uniformity' (eval/fst Eval) (extension/fst Ext) Sigma (eval/fst Eval')
+    <- uniformity' Eval Ext Sigma Eval'.
+
+- : uniformity' (eval/inl Eval) (extension/inl Ext) Sigma (eval/inl Eval')
+    <- uniformity' Eval Ext Sigma Eval'.
+
+- : uniformity' (eval/inr Eval) (extension/inr Ext) Sigma (eval/inr Eval')
+    <- uniformity' Eval Ext Sigma Eval'.
+
+- : uniformity' (eval/case-inl EvalBranch EvalSum)
+               (extension/case-inl _ ExtBranch ExtSum)
+               Sigma
+               (eval/case-inl EvalBranch' EvalSum')
+    <- uniformity' EvalSum ExtSum Sigma EvalSum'
+    <- uniformity' EvalBranch ExtBranch Sigma EvalBranch'.
+
+- : uniformity' (eval/case-inr EvalBranch EvalSum)
+               (extension/case-inr _ ExtBranch ExtSum)
+               Sigma
+               (eval/case-inr EvalBranch' EvalSum')
+    <- uniformity' EvalSum ExtSum Sigma EvalSum'
+    <- uniformity' EvalBranch ExtBranch Sigma EvalBranch'.
+
+- : uniformity' (eval/app EvalRes EvalArg EvalFun)
+               (extension/app _ ExtRes ExtArg ExtFun) Sigma
+               (eval/app EvalRes' EvalArg' EvalFun')
+    <- uniformity' EvalFun ExtFun Sigma EvalFun'
+    <- uniformity' EvalArg ExtArg Sigma EvalArg'
+    <- uniformity' EvalRes ExtRes Sigma EvalRes'.
+               
+- : uniformity' (eval/delta-let EvalBody EvalDelta)
+               (extension/delta-let _ ExtBody ExtDelta)
+               Sigma
+               (eval/delta-let EvalBody' EvalDelta')
+    <- uniformity' EvalDelta ExtDelta Sigma EvalDelta'
+    <- uniformity' EvalBody ExtBody Sigma EvalBody'.
+
+- : uniformity' (eval/into Eval) (extension/into Ext) Sigma (eval/into Eval')
+    <- uniformity' Eval Ext Sigma Eval'.
+
+- : uniformity' (eval/out Eval) (extension/out Ext) Sigma (eval/out Eval')
+    <- uniformity' Eval Ext Sigma Eval'.
+
+- : uniformity' (eval/stable Eval) (extension/stable Ext) Sigma 
+               (eval/stable Eval')
+    <- uniformity' Eval Ext Sigma Eval'.
+
+- : uniformity' (eval/promote Eval) (extension/promote Ext) Sigma 
+               (eval/promote Eval')
+    <- uniformity' Eval Ext Sigma Eval'.
+
+- : uniformity' (eval/stable-let EvalBody EvalStable)
+               (extension/stable-let _ ExtBody ExtStable)
+               Sigma
+               (eval/stable-let EvalBody' EvalStable')
+    <- uniformity' EvalStable ExtStable Sigma EvalStable'
+    <- uniformity' EvalBody ExtBody Sigma EvalBody'.
+
+- : uniformity' (eval/cons EvalSnd EvalFst)
+               (extension/cons _ ExtSnd ExtFst)
+               Sigma
+               (eval/cons EvalSnd' EvalFst')
+    <- uniformity' EvalFst ExtFst Sigma EvalFst'
+    <- uniformity' EvalSnd ExtSnd Sigma EvalSnd'.
+
+- : uniformity' (eval/cons-let EvalBody EvalCons)
+               (extension/cons-let _ ExtBody ExtCons)
+               Sigma
+               (eval/cons-let EvalBody' EvalCons')
+    <- uniformity' EvalCons ExtCons Sigma EvalCons'
+    <- uniformity' EvalBody ExtBody Sigma EvalBody'.
+
+- : uniformity' (eval/fix Eval) (extension/fix Ext) Sigma (eval/fix Eval')
+    <- uniformity' Eval Ext Sigma Eval'.
+
+%worlds () (uniformity' _ _ _ _).
+%total Eval (uniformity' Eval _ _ _).
+
+
+%% ----------------------------------------------------
+uniformity : eval store/empty E store/empty V ->
               {Sigma} eval Sigma E Sigma V -> type.
-%mode uniformity' +Eval1 +Sigma -Eval2.
+%mode uniformity +Eval1 +Sigma -Eval2.
 
-- : uniformity' (eval/refl _) Sigma (eval/refl _).
+- : uniformity Eval Sigma Eval'
+    <- extension-effective Eval Extension
+    <- uniformity' Eval Extension Sigma Eval'.
 
-- : uniformity' (eval/if-true EvalBranch EvalBool)
-                Sigma
-                (eval/if-true EvalBranch'' EvalBool'')
-    <- fix-empty-store EvalBool EvalBranch EvalBool' EvalBranch'
-    <- uniformity' EvalBool' Sigma EvalBool''
-    <- uniformity' EvalBranch' Sigma EvalBranch''.
-
-- : uniformity' (eval/if-false EvalBranch EvalBool) Sigma
-                 (eval/if-false EvalBranch'' EvalBool'')
-    <- fix-empty-store EvalBool EvalBranch EvalBool' EvalBranch'
-    <- uniformity' EvalBool' Sigma EvalBool''
-    <- uniformity' EvalBranch' Sigma EvalBranch''.
-
-- : uniformity' (eval/succ Eval) Sigma (eval/succ Eval')
-    <- uniformity' Eval Sigma Eval'.
-
-- : uniformity' (eval/nat-rec-zero EvalBranch EvalNum) Sigma
-                (eval/nat-rec-zero EvalBranch'' EvalNum'')
-    <- fix-empty-store EvalNum EvalBranch EvalNum' EvalBranch'
-    <- uniformity' EvalNum' Sigma EvalNum''
-    <- uniformity' EvalBranch' Sigma EvalBranch''.
-
-- : uniformity' (eval/nat-rec-succ EvalBranch EvalNum) Sigma
-                (eval/nat-rec-succ EvalBranch'' EvalNum'')
-    <- fix-empty-store EvalNum EvalBranch EvalNum' EvalBranch'
-    <- uniformity' EvalNum' Sigma EvalNum''
-    <- uniformity' EvalBranch' Sigma EvalBranch''.
-
-- : uniformity' (eval/pair EvalSnd EvalFst) Sigma
-                (eval/pair EvalSnd'' EvalFst'')
-    <- fix-empty-store EvalFst EvalSnd EvalFst' EvalSnd'
-    <- uniformity' EvalFst' Sigma EvalFst''
-    <- uniformity' EvalSnd' Sigma EvalSnd''.
-
-- : uniformity' (eval/fst Eval) Sigma (eval/fst Eval')
-    <- uniformity' Eval Sigma Eval'.
-
-- : uniformity' (eval/snd Eval) Sigma (eval/snd Eval')
-    <- uniformity' Eval Sigma Eval'.
-
-- : uniformity' (eval/inl Eval) Sigma (eval/inl Eval')
-    <- uniformity' Eval Sigma Eval'.
-
-- : uniformity' (eval/inr Eval) Sigma (eval/inr Eval')
-    <- uniformity' Eval Sigma Eval'.
-
-- : uniformity' (eval/case-inl EvalBranch EvalSum) Sigma
-                (eval/case-inl EvalBranch'' EvalSum'')
-    <- fix-empty-store EvalSum EvalBranch EvalSum' EvalBranch'
-    <- uniformity' EvalSum' Sigma EvalSum''
-    <- uniformity' EvalBranch' Sigma EvalBranch''.
-
-- : uniformity' (eval/case-inr EvalBranch EvalSum) Sigma
-                (eval/case-inr EvalBranch'' EvalSum'')
-    <- fix-empty-store EvalSum EvalBranch EvalSum' EvalBranch'
-    <- uniformity' EvalSum' Sigma EvalSum''
-    <- uniformity' EvalBranch' Sigma EvalBranch''.
-
-- : uniformity' (eval/app (Eval    : eval Sigma2 _ store/empty _)
-                          (EvalArg : eval Sigma1 _ Sigma2 _)
-                          (EvalFun : eval store/empty _ Sigma1 _)) 
-                Sigma
-                (eval/app Eval'' EvalArg'' EvalFun'')
-    <- fix-empty-store3 EvalFun  EvalArg  Eval 
-                        EvalFun' EvalArg' Eval'
-    <- uniformity' EvalFun' Sigma EvalFun''
-    <- uniformity' EvalArg' Sigma EvalArg''
-    <- uniformity' Eval' Sigma Eval''.
-
-- : uniformity' (eval/delta-let EvalBody EvalDelta) Sigma
-                (eval/delta-let EvalBody'' EvalDelta'')
-    <- fix-empty-store EvalDelta EvalBody EvalDelta' EvalBody'
-    <- uniformity' EvalDelta' Sigma EvalDelta''
-    <- uniformity' EvalBody' Sigma EvalBody''.
-
-- : uniformity' (eval/into Eval) Sigma (eval/into Eval')
-    <- uniformity' Eval Sigma Eval'.
-
-- : uniformity' (eval/out Eval) Sigma (eval/out Eval')
-    <- uniformity' Eval Sigma Eval'.
-
-- : uniformity' (eval/stable Eval) Sigma (eval/stable Eval')
-    <- uniformity' Eval Sigma Eval'.
-
-- : uniformity' (eval/promote Eval) Sigma (eval/promote Eval')
-    <- uniformity' Eval Sigma Eval'.
-
-- : uniformity' (eval/stable-let EvalBody EvalStable) Sigma
-                (eval/stable-let EvalBody'' EvalStable'')
-    <- fix-empty-store EvalStable EvalBody EvalStable' EvalBody'
-    <- uniformity' EvalStable' Sigma EvalStable''
-    <- uniformity' EvalBody' Sigma EvalBody''.
-
-- : uniformity' (eval/cons EvalSnd EvalFst) Sigma
-                (eval/cons EvalSnd'' EvalFst'')
-    <- fix-empty-store EvalFst EvalSnd EvalFst' EvalSnd'
-    <- uniformity' EvalFst' Sigma EvalFst''
-    <- uniformity' EvalSnd' Sigma EvalSnd''.
-
-- : uniformity' (eval/cons-let EvalBody EvalCons) Sigma
-                (eval/cons-let EvalBody'' EvalCons'')
-    <- fix-empty-store EvalCons EvalBody EvalCons' EvalBody'
-    <- uniformity' EvalCons' Sigma EvalCons''
-    <- uniformity' EvalBody' Sigma EvalBody''.
-
-- : uniformity' (eval/fix Eval) Sigma (eval/fix Eval')
-    <- uniformity' Eval Sigma Eval'.
-
-%worlds () (uniformity' _ _ _).
-%covers uniformity' +Eval +Sigma -Eval'.
-%%total Eval (uniformity' Eval _ _).
+%worlds () (uniformity _ _ _).
+%total {} (uniformity _ _ _).

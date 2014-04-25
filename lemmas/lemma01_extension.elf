@@ -30,7 +30,8 @@ combine-conc3 : store-conc Sigma1 Sigma    Sigma2
              -> type.
 %mode combine-conc3 +Conc1 +Conc2 +Conc3 -Conc4.
 
-- : combine-conc3 Conc1 Conc2 Conc3 Conc4
+combine-conc3/intro : 
+    combine-conc3 Conc1 Conc2 Conc3 Conc4
     <- combine-conc Conc1 Conc2 Conc
     <- combine-conc Conc Conc3 Conc4.
 
@@ -93,7 +94,7 @@ extension/snd :
     extension (eval/snd EvalPair) Conc
     <- extension EvalPair Conc.
 
-extension/inl- : 
+extension/inl : 
     extension (eval/inl EvalLeft) Conc
     <- extension EvalLeft Conc.
 

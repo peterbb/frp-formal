@@ -1,0 +1,160 @@
+combine-conc-effective :
+    {Conc1 : store-conc Sigma1 Sigma Sigma2}
+    {Conc2 : store-conc Sigma2 Sigma' Sigma3}
+    combine-conc Conc1 Conc2 Conc3 -> type.
+%mode combine-conc-effective +Conc1 +Conc2 -Combine.
+
+- : combine-conc-effective _ store-conc/empty combine-conc/empty.
+
+- : combine-conc-effective Conc1 (store-conc/now Conc2)
+        (combine-conc/now Combine)
+    <- combine-conc-effective Conc1 Conc2 Combine.
+
+- : combine-conc-effective Conc1 (store-conc/later Conc2)
+        (combine-conc/later Combine)
+    <- combine-conc-effective Conc1 Conc2 Combine.
+
+- : combine-conc-effective Conc1 (store-conc/null Conc2)
+        (combine-conc/null Combine)
+    <- combine-conc-effective Conc1 Conc2 Combine.
+
+%worlds () (combine-conc-effective _ _ _).
+%total Conc2 (combine-conc-effective _ Conc2 _).
+
+combine-conc3-effective :
+    {Conc1 : store-conc Sigma1 Sigma   Sigma2}
+    {Conc2 : store-conc Sigma2 Sigma'  Sigma3}
+    {Conc3 : store-conc Sigma3 Sigma'' Sigma4}
+    combine-conc3 Conc1 Conc2 Conc3 Conc4 -> type.
+%mode combine-conc3-effective +Conc1 +Conc2 +Conc3 -Combine.
+
+- : combine-conc3-effective Conc1 Conc2 Conc3 
+            (combine-conc3/intro Combine2 Combine1)
+    <- combine-conc-effective Conc1 Conc2 
+        (Combine1 : combine-conc Conc1 Conc2 Conc)
+    <- combine-conc-effective Conc Conc3 Combine2.
+
+%worlds () (combine-conc3-effective _ _ _ _).
+%total {} (combine-conc3-effective _ _ _ _).
+
+%% ------------------------------------------------------
+extension-effective : 
+    {Eval : eval Sigma E Sigma' V}
+    extension Eval Conc -> type.
+%mode extension-effective +Eval -Ext.
+
+- : extension-effective (eval/refl _) extension/refl.
+
+- : extension-effective (eval/if-true EvalBranch EvalPred)
+        (extension/if-true Combine ExtBranch ExtPred)
+    <- extension-effective EvalPred ExtPred
+    <- extension-effective EvalBranch ExtBranch
+    <- combine-conc-effective _ _ Combine.
+
+- : extension-effective (eval/if-false EvalBranch EvalPred)
+        (extension/if-false Combine ExtBranch ExtPred)
+    <- extension-effective EvalPred ExtPred
+    <- extension-effective EvalBranch ExtBranch
+    <- combine-conc-effective _ _ Combine.
+
+- : extension-effective (eval/succ Eval) (extension/succ Ext)
+    <- extension-effective Eval Ext.
+
+- : extension-effective (eval/nat-rec-zero EvalBranch EvalNat)
+        (extension/nat-rec-zero Combine ExtBranch ExtNat)
+    <- extension-effective EvalNat ExtNat
+    <- extension-effective EvalBranch ExtBranch
+    <- combine-conc-effective _ _ Combine.
+
+- : extension-effective (eval/nat-rec-succ EvalBranch EvalNat)
+        (extension/nat-rec-succ Combine ExtBranch ExtNat)
+    <- extension-effective EvalNat ExtNat
+    <- extension-effective EvalBranch ExtBranch
+    <- combine-conc-effective _ _ Combine.
+
+- : extension-effective (eval/pair EvalSnd EvalFst)
+        (extension/pair Combine ExtSnd ExtFst)
+    <- extension-effective EvalFst ExtFst
+    <- extension-effective EvalSnd ExtSnd
+    <- combine-conc-effective _ _ Combine.
+
+- : extension-effective (eval/fst Eval) (extension/fst Ext)
+    <- extension-effective Eval Ext.
+
+- : extension-effective (eval/snd Eval) (extension/snd Ext)
+    <- extension-effective Eval Ext.
+
+- : extension-effective (eval/inl Eval) (extension/inl Ext)
+    <- extension-effective Eval Ext.
+
+- : extension-effective (eval/inr Eval) (extension/inr Ext)
+    <- extension-effective Eval Ext.
+
+- : extension-effective (eval/case-inl EvalBranch EvalSum)
+        (extension/case-inl Combine ExtBranch ExtSum)
+    <- extension-effective EvalSum ExtSum
+    <- extension-effective EvalBranch ExtBranch
+    <- combine-conc-effective _ _ Combine.
+
+- : extension-effective (eval/case-inr EvalBranch EvalSum)
+        (extension/case-inr Combine ExtBranch ExtSum)
+    <- extension-effective EvalSum ExtSum
+    <- extension-effective EvalBranch ExtBranch
+    <- combine-conc-effective _ _ Combine.
+
+- : extension-effective (eval/app EvalRes EvalArg EvalFun)
+        (extension/app Combine ExtRes ExtArg ExtFun)
+    <- extension-effective EvalFun ExtFun
+    <- extension-effective EvalArg ExtArg
+    <- extension-effective EvalRes ExtRes
+    <- combine-conc3-effective _ _ _ Combine.
+
+- : extension-effective (eval/delta _ Eval) 
+                        (extension/delta Ext)
+    <- extension-effective Eval Ext.
+
+- : extension-effective (eval/delta-let EvalBody EvalDelta)
+        (extension/delta-let Combine ExtBody ExtDelta)
+    <- extension-effective EvalDelta ExtDelta
+    <- extension-effective EvalBody ExtBody
+    <- combine-conc-effective _ _ Combine.
+
+- : extension-effective (eval/ptr-ref _) extension/ptr-ref.
+
+- : extension-effective (eval/into Eval) (extension/into Ext)
+    <- extension-effective Eval Ext.
+
+- : extension-effective (eval/out Eval) (extension/out Ext)
+    <- extension-effective Eval Ext.
+
+- : extension-effective (eval/stable Eval) (extension/stable Ext)
+    <- extension-effective Eval Ext.
+
+- : extension-effective (eval/promote Eval) (extension/promote Ext)
+    <- extension-effective Eval Ext.
+
+- : extension-effective (eval/stable-let EvalBody EvalStable)
+        (extension/stable-let Combine ExtBody ExtStable)
+    <- extension-effective EvalStable ExtStable
+    <- extension-effective EvalBody ExtBody
+    <- combine-conc-effective _ _ Combine.
+
+- : extension-effective (eval/cons EvalSnd EvalFst)
+        (extension/cons Combine ExtSnd ExtFst)
+    <- extension-effective EvalFst ExtFst
+    <- extension-effective EvalSnd ExtSnd
+    <- combine-conc-effective _ _ Combine.
+
+- : extension-effective (eval/cons-let EvalBody EvalCons)
+        (extension/cons-let Combine ExtBody ExtCons)
+    <- extension-effective EvalCons ExtCons
+    <- extension-effective EvalBody ExtBody
+    <- combine-conc-effective _ _ Combine.
+
+- : extension-effective (eval/fix Eval) (extension/fix Ext)
+    <- extension-effective Eval Ext.
+
+%worlds () (extension-effective _ _).
+%total Eval (extension-effective Eval _).
+
+
