@@ -1,0 +1,131 @@
+
+
+eval-size : eval Sigma E Sigma' V -> nat -> type.
+%mode eval-size +Eval -Size.
+
+eval-size/refl : 
+    eval-size (eval/refl _) nat/0.
+
+eval-size/if-true : 
+    eval-size (eval/if-true EvalBranch EvalBool) (nat/s Sum)
+    <- eval-size EvalBool N
+    <- eval-size EvalBranch M
+    <- plus-nat N M Sum.
+
+eval-size/if-false : 
+    eval-size (eval/if-false EvalBranch EvalBool) (nat/s Sum)
+    <- eval-size EvalBool N
+    <- eval-size EvalBranch M
+    <- plus-nat N M Sum.
+
+eval-size/succ : 
+    eval-size (eval/succ Eval) (nat/s N)
+    <- eval-size Eval N.
+
+eval-size/nat-rec-zero : 
+    eval-size (eval/nat-rec-zero EvalBranch EvalNat) (nat/s Sum)
+    <- eval-size EvalNat N
+    <- eval-size EvalBranch M
+    <- plus-nat N M Sum.
+
+eval-size/nat-rec-succ : 
+    eval-size (eval/nat-rec-succ EvalBranch EvalNat) (nat/s Sum)
+    <- eval-size EvalNat N
+    <- eval-size EvalBranch M
+    <- plus-nat N M Sum.
+
+eval-size/pair : 
+    eval-size (eval/pair EvalSnd EvalFst) (nat/s Sum)
+    <- eval-size EvalFst N
+    <- eval-size EvalSnd M
+    <- plus-nat N M Sum.
+
+eval-size/fst :
+    eval-size (eval/fst Eval) (nat/s N)
+    <- eval-size Eval N.
+
+eval-size/snd :
+    eval-size (eval/snd Eval) (nat/s N)
+    <- eval-size Eval N.
+
+eval-size/inl :
+    eval-size (eval/inl Eval) (nat/s N)
+    <- eval-size Eval N.
+
+eval-size/inr :
+    eval-size (eval/inr Eval) (nat/s N)
+    <- eval-size Eval N.
+
+eval-size/case-inl :
+    eval-size (eval/case-inl EvalBranch EvalSum) (nat/s Sum)
+    <- eval-size EvalSum N
+    <- eval-size EvalBranch M
+    <- plus-nat N M Sum.
+
+eval-size/case-inr :
+    eval-size (eval/case-inr EvalBranch EvalSum) (nat/s Sum)
+    <- eval-size EvalSum N
+    <- eval-size EvalBranch M
+    <- plus-nat N M Sum.
+
+eval-size/app :
+    eval-size (eval/app Eval EvalArg EvalFun) (nat/s Sum')
+    <- eval-size EvalFun N1
+    <- eval-size EvalArg N2
+    <- eval-size Eval N3
+    <- plus-nat N1 N2 Sum
+    <- plus-nat N3 Sum Sum'.
+
+eval-size/delta :
+    eval-size (eval/delta _ Eval) (nat/s N)
+    <- eval-size Eval N.
+
+eval-size/delta-let :
+    eval-size (eval/delta-let EvalBody EvalDelta) (nat/s Sum)
+    <- eval-size EvalDelta N
+    <- eval-size EvalBody M
+    <- plus-nat N M Sum.
+
+eval-size/ptr-ref :
+    eval-size (eval/ptr-ref _) nat/0.
+
+eval-size/into :
+    eval-size (eval/into Eval) (nat/s N)
+    <- eval-size Eval N.
+
+eval-size/out :
+    eval-size (eval/out Eval) (nat/s N)
+    <- eval-size Eval N.
+
+eval-size/stable : 
+    eval-size (eval/stable Eval) (nat/s N)
+    <- eval-size Eval N.
+
+eval-size/promote :
+    eval-size (eval/promote Eval) (nat/s N)
+    <- eval-size Eval N.
+
+eval-size/stable-let :
+    eval-size (eval/stable-let EvalBody EvalStable) (nat/s Sum)
+    <- eval-size EvalStable N
+    <- eval-size EvalBody M
+    <- plus-nat N M Sum.
+
+eval-size/cons :
+    eval-size (eval/cons EvalSnd EvalFst) (nat/s Sum)
+    <- eval-size EvalFst N
+    <- eval-size EvalSnd M
+    <- plus-nat N M Sum.
+
+eval-size/cons-let :
+    eval-size (eval/cons-let EvalBody EvalCons) (nat/s Sum)
+    <- eval-size EvalCons N
+    <- eval-size EvalBody M
+    <- plus-nat N M Sum.
+
+eval-size/fix :
+    eval-size (eval/fix Eval) (nat/s N)
+    <- eval-size Eval N.
+
+%worlds () (eval-size _ _).
+%total Eval (eval-size Eval _).
