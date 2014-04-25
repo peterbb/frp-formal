@@ -1,0 +1,55 @@
+
+% --------------------------------------------------
+nat : type.
+
+nat/0 : nat.
+nat/s : nat -> nat.
+
+neq-nat : nat -> nat -> type.
+%mode neq-nat +N +M.
+
+% --------------------------------------------------
+neq-nat/s-0 : neq-nat (nat/s N) nat/0.
+neq-nat/0-s : neq-nat nat/0 (nat/s M).
+neq-nat/s-s : neq-nat (nat/s N) (nat/s M)
+    <- neq-nat N M.
+
+%worlds () (neq-nat _ _).
+
+% --------------------------------------------------
+plus-nat : nat -> nat -> nat -> type.
+%mode plus-nat +N +M -Sum.
+
+plus-nat/0 : plus-nat nat/0 M M.
+plus-nat/s : plus-nat (nat/s N) M (nat/s P)
+    <- plus-nat N M P.
+
+%worlds () (plus-nat _ _ _).
+%total N (plus-nat N _ _).
+
+% --------------------------------------------------
+construct-neq : {N} neq-nat (nat/s N) N -> type.
+%mode construct-neq +N -Neq.
+
+construct-neq/0 : construct-neq nat/0 neq-nat/s-0.
+construct-neq/s : construct-neq (nat/s N) (neq-nat/s-s Neq)
+    <- construct-neq N Neq.
+
+%worlds () (construct-neq _ _).
+%total N (construct-neq N _).
+
+% --------------------------------------------------
+max-nat : nat -> nat -> nat -> type.
+%mode max-nat +N +M -Max.
+
+max-nat/0-M : max-nat nat/0 M M.
+
+max-nat/N-0 : max-nat (nat/s N) nat/0 (nat/s N).
+
+max-nat/s-s : max-nat (nat/s N) (nat/s M) (nat/s Max)
+    <- max-nat N M Max.
+
+%worlds () (max-nat _ _ _).
+%total [N M] (max-nat N M _).
+
+
