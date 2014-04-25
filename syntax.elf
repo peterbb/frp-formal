@@ -1,0 +1,46 @@
+
+% --------------------------------------------------
+tp : type.  %name tp A.
+
+tp/bool   : tp.
+tp/nat    : tp.
+tp/prod   : tp -> tp -> tp.
+tp/sum    : tp -> tp -> tp.
+=>        : tp -> tp -> tp.     %infix right 10 =>.
+tp/next   : tp -> tp.
+tp/stable : tp -> tp.
+tp/mu     : (tp -> tp) -> tp.
+tp/S      : tp -> tp.
+tp/alloc  : tp.
+
+% --------------------------------------------------
+tm : type. %name tm E.
+
+tm/zero        : tm.
+tm/succ        : tm -> tm.
+tm/nat-rec     : tm -> tm -> (tm -> tm) -> tm.
+tm/true        : tm.
+tm/false       : tm.
+tm/if          : tm -> tm -> tm -> tm.
+tm/fst         : tm -> tm.
+tm/snd         : tm -> tm.
+tm/pair        : tm -> tm -> tm.
+tm/inl         : tm -> tm.
+tm/inr         : tm -> tm.
+tm/case        : tm -> (tm -> tm) -> (tm -> tm) -> tm.
+tm/lam         : (tm -> tm) -> tm.
+tm/app         : tm -> tm -> tm.
+tm/delta       : tm -> tm -> tm.
+tm/delta-let   : tm -> (tm -> tm) -> tm.
+tm/stable      : tm -> tm.
+tm/stable-let  : tm -> (tm -> tm) -> tm.
+tm/into        : tm -> tm.
+tm/out         : tm -> tm.
+tm/cons        : tm -> tm -> tm.
+tm/cons-let    : tm -> (tm -> tm -> tm) -> tm.
+tm/fix         : (tm -> tm) -> tm.
+tm/promote     : tm -> tm.
+tm/ptr         : nat -> tm.
+tm/ptr-ref     : nat -> tm.
+tm/alloc       : tm.
+

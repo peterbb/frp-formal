@@ -1,0 +1,173 @@
+% --------------------------------------------------
+ctx : type.
+
+ctx/empty  : ctx.
+ctx/now    : ctx -> tm -> tp -> ctx.
+ctx/stable : ctx -> tm -> tp -> ctx.
+ctx/later  : ctx -> tm -> tp -> ctx.
+
+% --------------------------------------------------
+ctx-lookup : ctx -> tm -> tp -> type.
+
+ctx-lookup/now-found : ctx-lookup (ctx/now Sigma X A) X A.
+
+ctx-lookup/stable-found : ctx-lookup (ctx/stable Sigma X A) X A.
+
+ctx-lookup/now : ctx-lookup (ctx/now Gamma X' B) X A
+    <- ctx-lookup Gamma X A.
+
+ctx-lookup/stable : ctx-lookup (ctx/stable Gamma X' B) X A
+    <- ctx-lookup Gamma X A.
+
+ctx-lookup/later : ctx-lookup (ctx/later Gamma X' B) X A
+    <- ctx-lookup Gamma X A.
+    
+% --------------------------------------------------
+ctx* : ctx -> ctx -> type.
+%mode ctx* +Gamma -Delta.
+
+ctx*/empty  : ctx* ctx/empty ctx/empty.
+ctx*/now    : ctx* (ctx/now Gamma _ _) Delta
+    <- ctx* Gamma Delta.
+ctx*/stable : ctx* (ctx/stable Gamma X A) (ctx/stable Delta X A)
+    <- ctx* Gamma Delta.
+ctx*/later  : ctx* (ctx/later Gamma X A) (ctx/now Delta X A)
+    <- ctx* Gamma Delta.
+
+%worlds () (ctx* _ _).
+%total Gamma (ctx* Gamma _).
+
+% --------------------------------------------------
+ctx# : ctx -> ctx -> type.
+%mode ctx# +Gamma -Delta.
+
+ctx#/empty  : ctx# ctx/empty ctx/empty.
+ctx#/now    : ctx# (ctx/now Gamma _ _) Delta
+    <- ctx# Gamma Delta.
+ctx#/later  : ctx# (ctx/later Gamma _ _) Delta
+    <- ctx# Gamma Delta.
+ctx#/stable : ctx# (ctx/stable Gamma X A) (ctx/stable Delta X A)
+    <- ctx# Gamma Delta.
+
+%worlds () (ctx# _ _).
+%total Gamma (ctx# Gamma _).
+
+% --------------------------------------------------
+stable : tp -> type.
+%mode stable +A.
+
+stable/bool : stable tp/bool.
+
+stable/nat : stable tp/nat.
+
+stable/prod : stable (tp/prod A B)
+    <- stable A
+    <- stable B.
+
+stable/sum : stable (tp/sum A B)
+    <- stable A
+    <- stable B.
+
+stable/stable : stable (tp/stable A).
+
+% --------------------------------------------------
+of-now    : ctx -> tm -> tp -> type.
+of-stable : ctx -> tm -> tp -> type.
+of-later  : ctx -> tm -> tp -> type.
+
+of-now/bool-it : of-now Gamma tm/true tp/bool.
+
+of-now/bool-if : of-now Gamma tm/false tp/bool.
+
+of-now/bool-e : of-now Gamma (tm/if E Et Ef) C
+    <- of-now Gamma E tp/bool
+    <- of-now Gamma Et C
+    <- of-now Gamma Ef C.
+
+of-now/nat-iz : of-now Gamma tm/zero tp/nat.
+
+of-now/nat-is : of-now Gamma (tm/succ E) tp/nat
+    <- of-now Gamma E tp/nat.
+
+of-now/nat-e : of-now Gamma (tm/nat-rec E Ez Es) C
+    <- of-now Gamma E tp/nat
+    <- of-now Gamma Ez C
+    <- ({x} of-now (ctx/now Gamma x tp/nat) (Es x) C).
+
+of-now/pair-i : of-now Gamma (tm/pair E E') (tp/prod A B)
+    <- of-now Gamma E A
+    <- of-now Gamma E' B.
+
+of-now/pair-el : of-now Gamma (tm/fst E) A
+    <- of-now Gamma E (tp/prod A B).
+
+of-now/pair-er : of-now Gamma (tm/snd E) B
+    <- of-now Gamma E (tp/prod A B).
+
+of-now/sum-il : of-now Gamma (tm/inl E) (tp/sum A B)
+    <- of-now Gamma E A.
+
+of-now/sum-ir : of-now Gamma (tm/inr E) (tp/sum A B)
+    <- of-now Gamma E B.
+
+of-now/sum-e : of-now Gamma (tm/case E E' E'') C
+    <- of-now Gamma E (tp/sum A B)
+    <- ({x} of-now (ctx/now Gamma x A) (E' x) C)
+    <- ({y} of-now (ctx/now Gamma y B) (E'' y) C).
+
+of-now/=>-i : of-now Gamma (tm/lam E) (A => B)
+    <- ({x} of-now (ctx/now Gamma x A) (E x) B).
+
+of-now/=>-e : of-now Gamma (tm/app E E') B
+    <- of-now Gamma E (A => B)
+    <- of-now Gamma E' A.
+
+of-now/next-i : of-now Gamma (tm/delta E' E) (tp/next A)
+    <- of-later Gamma E A
+    <- of-now Gamma E' tp/alloc.
+
+of-now/next-e : of-now Gamma (tm/delta-let E E') C
+    <- of-now Gamma E (tp/next A)
+    <- ({x} of-now (ctx/later Gamma x A) (E' x) C).
+
+of-now/mu-i : of-now Gamma (tm/into E) (tp/mu A)
+    <- of-now Gamma E (A (tp/next (tp/mu A))).
+
+of-now/mu-e : of-now Gamma (tm/out E) (A (tp/next (tp/mu A)))
+    <- of-now Gamma E (tp/mu A).
+
+of-now/stable-i : of-now Gamma (tm/stable E) (tp/stable A)
+    <- of-stable Gamma E A.
+
+of-now/stable-e : of-now Gamma (tm/stable-let E E') C
+    <- of-now Gamma E (tp/stable A)
+    <- ({x} of-now (ctx/stable Gamma x A) (E' x) C).
+
+of-now/promote : of-now Gamma (tm/promote E) (tp/stable A)
+    <- stable A
+    <- of-now Gamma E A.
+
+of-now/S-i : of-now Gamma (tm/cons E E') (tp/S A)
+    <- of-now Gamma E A
+    <- of-now Gamma E' (tp/next (tp/S A)).
+
+of-now/S-e : of-now Gamma (tm/cons-let E E') C
+    <- of-now Gamma E (tp/S A)
+    <- ({x}{xs} of-now (ctx/now (ctx/now Gamma x A) xs (tp/next (tp/S A)))
+                       (E' x xs) C).      
+
+of-now/fix : of-now Gamma (tm/fix E) A
+    <- ctx# Gamma Gamma#
+    <- ({x} of-now (ctx/later Gamma# x A) (E x) A).
+
+of-now/hyp : of-now Gamma X A
+    <- ctx-lookup Gamma X A.
+
+of-stable/intro : of-stable Gamma E A
+    <- ctx# Gamma Gamma#
+    <- of-now Gamma# E A.
+
+of-later/intro : of-later Gamma E A
+    <- ctx* Gamma Gamma*
+    <- of-now Gamma* E A.
+
